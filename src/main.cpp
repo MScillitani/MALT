@@ -5,7 +5,7 @@
 #include <time.h>
 
 // Run duration (3x60 = 3 m, 12x3600 = 12 h)
-static const uint32_t RUN_TIME = 3 * 60;
+static const uint32_t RUN_TIME = 12 * 3600;
 
 // Wi-Fi user & pass
 const char* SSID = "";
