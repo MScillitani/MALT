@@ -4,6 +4,9 @@
 #include <WiFi.h>
 #include <time.h>
 
+// Run duration (3x60 = 3 m, 12x3600 = 12 h)
+static const uint32_t RUN_TIME = 3 * 60;
+
 // Wi-Fi user & pass
 const char* SSID = "";
 const char* PASS = "";
@@ -19,6 +22,12 @@ WiFiClient client;
 
 // Sensor object
 BH1750 sensor;
+
+// Timing variables
+time_t startTime;
+time_t endTime;
+uint32_t directSunSec = 0;
+bool testComplete = false;
 
 // Helpful function: Waits for Wi-Fi
 void initTime() {
@@ -67,6 +76,10 @@ void setup() {
 
   // Wi-Fi and NTP sync
   initTime();
+
+  // Start record
+  time(&startTime);
+  endTime = startTime + RUN_TIME;
 
   // Start TCP server
   server.begin();
@@ -127,32 +140,67 @@ void loop() {
     }
   }
 
-  // Get current time
-  struct tm now;
-  if (getLocalTime(&now)) {
-    // Read light level
-    float lux = sensor.readLightLevel();
+  // If test isn't complete, get another sample
+  if (!testComplete) {
+    time_t currentTime;
+    time(&currentTime);
 
-    // Print timestamp & reading
-    char lineBuffer[64];
-    snprintf(lineBuffer, sizeof(lineBuffer),
-      "[%02u:%02u:%02u] lux: %.2f\n",
-      now.tm_hour,
-      now.tm_min,
-      now.tm_sec,
-      lux);
+    // Check if we're done
+    if (currentTime >= endTime) {
+      testComplete = true;
+      uint32_t hours = directSunSec / 3600;
+      uint32_t minutes = (directSunSec % 3600) / 60;
+      uint32_t seconds = (directSunSec % 3600) % 60;
 
-    // Prints to USB Serial
-    Serial.print(lineBuffer);
+      char summary[128];
+      snprintf(summary, sizeof(summary), "Test Complete\n"
+                                         "Total direct sunlight: %u hours, %u minutes, and %u seconds\n",
+                                         hours, minutes, seconds);
 
-    // If the TCP client is connected, sends the same line there too
-    if (client && client.connected()) {
-      client.print(lineBuffer);
+      // Prints to Serial
+      Serial.println();
+      Serial.println(summary);
+
+      // Prints to telnet client
+      if (client && client.connected()) {
+        client.print("\n");
+        client.print(summary);
+      }
+      return;
     }
-  } else {
-    Serial.println("Could not sync. Skipping this reading");
-    if (client && client.connected()) {
-      client.println("Could not sync. Skipping this reading");
+
+    // Get current time
+    struct tm now;
+    if (getLocalTime(&now)) {
+      // Read light level
+      float lux = sensor.readLightLevel();
+
+      // Direct sunlight = 20000+ lux (adds 2 seconds to total)
+      if (lux >= 20000.0) {
+        directSunSec += 2;
+      }
+
+      // Print timestamp & reading
+      char lineBuffer[64];
+      snprintf(lineBuffer, sizeof(lineBuffer),
+        "[%02u:%02u:%02u] lux: %.2f\n",
+        now.tm_hour,
+        now.tm_min,
+        now.tm_sec,
+        lux);
+
+      // Prints to USB Serial
+      Serial.print(lineBuffer);
+
+      // If the TCP client is connected, sends the same line there too
+      if (client && client.connected()) {
+        client.print(lineBuffer);
+      }
+    } else {
+      Serial.println("Could not sync. Skipping this reading");
+      if (client && client.connected()) {
+        client.println("Could not sync. Skipping this reading");
+      }
     }
   }
 
