@@ -57,3 +57,23 @@ Software
 To watch live data, enter the following into your terminal:
 
 `telnet <board-ip> 23`
+
+---
+
+## Possible Improvements
+
+
+* A 3D printable chassis
+* A cooling system (mobile fan, good airflow)
+* Offline mode
+* Additional on-board storage (microSD)
+* A user interface
+
+---
+
+## Helpful Resources
+
+* BH1750 library: https://github.com/claws/BH1750
+* WiFi tutorial: https://deepbluembedded.com/esp32-connect-to-wifi-network-arduino/
+* ESP32 pinout: https://lastminuteengineers.com/esp32-wroom-32-pinout-reference/
+
