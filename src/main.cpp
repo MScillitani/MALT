@@ -5,7 +5,10 @@
 #include <time.h>
 
 // Run duration (3x60 = 3 m, 12x3600 = 12 h)
-static const uint32_t RUN_TIME = 12 * 3600;
+static constexpr uint32_t RUN_TIME = 12 * 3600;
+
+// Device ID
+static constexpr int DEVICE_ID = 1;
 
 // Wi-Fi user & pass
 const char* SSID = "";
@@ -153,9 +156,9 @@ void loop() {
       uint32_t seconds = (directSunSec % 3600) % 60;
 
       char summary[128];
-      snprintf(summary, sizeof(summary), "Test Complete\n"
-                                         "Total direct sunlight: %u hours, %u minutes, and %u seconds\n",
-                                         hours, minutes, seconds);
+      snprintf(summary, sizeof(summary), "DEVICE_%d: Test Complete\n"
+                                         "\nTotal direct sunlight: %u hours, %u minutes, and %u seconds\n",
+                                         DEVICE_ID, hours, minutes, seconds);
 
       // Prints to Serial
       Serial.println();
